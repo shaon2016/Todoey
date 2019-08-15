@@ -9,7 +9,8 @@
 import UIKit
 
 class TodoListVC: UITableViewController {
-
+    
+    private let userPrefDefualts = UserDefaults.standard
     private var itemArray = ["Shaon", "Ashiq", "Nadim"]
     
     
@@ -20,6 +21,9 @@ class TodoListVC: UITableViewController {
     }
 
     func initVar() {
+        if let items = userPrefDefualts.array(forKey: "items") as? [String] {
+            itemArray = items
+        }
         
     }
     
@@ -63,6 +67,7 @@ class TodoListVC: UITableViewController {
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             
             self.itemArray.append(textFiled.text!)
+            self.userPrefDefualts.set(self.itemArray, forKey: "items")
             self.tableView.reloadData()
         }
         alert.addTextField { (alertTextField) in
