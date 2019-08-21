@@ -28,25 +28,14 @@ class TodoListVC: UITableViewController {
     
     func initVar() {
         
-
+        
     }
     
     func initView() {
         loadItems()
     }
     
-    func loadItems() {
-        let request : NSFetchRequest<Item> = Item.fetchRequest()
-        
-        do {
-            try itemArray = context.fetch(request)
-        }catch{
-            print("Error in Fetching Item data: \(error)")
-        }
-    
-    }
-    
-    //MARK - TableView DataSource Methods
+    // MARK: -  TableView DataSource Methods
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "todoItemCell", for: indexPath)
@@ -67,7 +56,7 @@ class TodoListVC: UITableViewController {
         return itemArray.count
     }
     
-    //MARK - TableView Delegate methods
+    // MARK: - TableView Delegate methods
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 //        context.delete(itemArray[indexPath.row])
@@ -78,7 +67,7 @@ class TodoListVC: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
-    //MARK - Add New Items
+    // MARK: - Add New Items
     
     @IBAction func addButtonPressed(_ sender: Any) {
         var textFiled = UITextField()
@@ -111,6 +100,45 @@ class TodoListVC: UITableViewController {
         }
         
         self.tableView.reloadData()
+    }
+    
+    func loadItems(with request : NSFetchRequest<Item> = Item.fetchRequest()) {
+       do {
+            try itemArray = context.fetch(request)
+        }catch{
+            print("Error in Fetching Item data: \(error)")
+        }
+        
+        tableView.reloadData()
+    }
+}
+
+// MARK: -  Searchbar delegate
+//  Resource:
+
+extension TodoListVC : UISearchBarDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        // [cd] used for case sensitive and dicritic reason, will ignore any case sensitive and dicritic
+        let predicate = NSPredicate(format: "title contains[cd] %@", searchBar.text!)
+        
+        request.predicate = predicate
+        
+        let sortDescriptr = NSSortDescriptor(key: "title", ascending: true)
+        request.sortDescriptors = [sortDescriptr]
+    
+        loadItems(with: request)
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchText.count == 0 {
+            loadItems()
+            
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+        }
     }
 }
 
