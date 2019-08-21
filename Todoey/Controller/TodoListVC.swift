@@ -12,6 +12,12 @@ import CoreData
 class TodoListVC: UITableViewController {
     private let context = (UIApplication.shared.delegate as! AppDelegate)
         .persistentContainer.viewContext
+    // MARK: - Instances
+    var selectedCat : Category? {
+        didSet {
+            loadItems()
+        }
+    }
     private let userPrefDefualts = UserDefaults.standard
     private var itemArray = [Item]()
     // Getting the first path as it is array
@@ -78,6 +84,7 @@ class TodoListVC: UITableViewController {
             let item = Item(context: self.context)
             item.title = textFiled.text!
             item.done = false
+            item.parentCategory = self.selectedCat
             
             self.itemArray.append(item)
             self.saveItem()
@@ -92,6 +99,8 @@ class TodoListVC: UITableViewController {
         present(alert, animated: true, completion: nil)
     }
     
+    // MARK: - Model manipulation methods
+    
     func saveItem()  {
         do {
            try context.save()
@@ -102,7 +111,17 @@ class TodoListVC: UITableViewController {
         self.tableView.reloadData()
     }
     
-    func loadItems(with request : NSFetchRequest<Item> = Item.fetchRequest()) {
+    func loadItems(with request : NSFetchRequest<Item> = Item.fetchRequest(), with predicate: NSPredicate? = nil) {
+        let catPredicate = NSPredicate(format: "parentCategory.name matches %@", selectedCat?.name ?? "")
+        
+        if let additionalPredicate = predicate {
+            let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [catPredicate, additionalPredicate])
+            request.predicate = compoundPredicate
+        } else {
+            request.predicate = catPredicate
+        }
+        
+        
        do {
             try itemArray = context.fetch(request)
         }catch{
@@ -123,12 +142,10 @@ extension TodoListVC : UISearchBarDelegate {
         // [cd] used for case sensitive and dicritic reason, will ignore any case sensitive and dicritic
         let predicate = NSPredicate(format: "title contains[cd] %@", searchBar.text!)
         
-        request.predicate = predicate
-        
         let sortDescriptr = NSSortDescriptor(key: "title", ascending: true)
         request.sortDescriptors = [sortDescriptr]
     
-        loadItems(with: request)
+        loadItems(with: request, with: predicate)
     }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
